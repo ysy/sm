@@ -2,6 +2,7 @@
 use std::io::{self, Write, Read};
 use serialport::{self, SerialPortType};
 use clap::Parser;
+use chrono::prelude::*;
 
 /// serial monitor
 #[derive(Parser, Debug)]
@@ -47,6 +48,12 @@ fn list_devices() {
         print!("\n");
     }
 }
+
+fn get_timestamp() ->String {
+    let local: DateTime<Local> = Local::now();
+    format!("{}", local.format("%m-%d %H:%M:%S%.3f "))
+}
+
 fn main() -> io::Result<()> {
     let args =  Args::parse();
 
@@ -60,16 +67,22 @@ fn main() -> io::Result<()> {
                             .open()
                             .expect(
                                 format!("Failed to open the serial port: {}\n",
-                                     port.as_str()).as_str()) ;
-
+                                     port.as_str()).as_str());
     println!("Opened serial port: {} baudrate: {}", port.as_str(), args.baud);
     let mut buf = [0;1];
     let mut stdout = std::io::stdout().lock();
+    let mut new_line_detected = true;
     loop {
         match seril_port.read(&mut buf) {
             Ok(_) => {
-                if buf[0] == b'\n' {
-                    // println!("##### new line detected");
+                if buf[0] == b'\n' || buf[0] == b'\r' {
+                    new_line_detected = true;
+                } else if new_line_detected {
+                    if args.time {
+                        let tm = get_timestamp();
+                        stdout.write_all(tm.as_bytes())?;
+                    }
+                    new_line_detected = false;
                 }
                 stdout.write_all(&mut buf)?;
             },
