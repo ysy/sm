@@ -7,9 +7,18 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// list serial port devices
+    /// Serial port (COM20 or /dev/ttyUSB0)
+    #[arg(short, long)]
+    port: Option<String>,
+    /// Baudrate
+    #[arg(short, long, default_value_t=115200)]
+    baud: u32,
+    /// List serial port devices
     #[arg(short, long, default_value_t = false)]
-    list: bool
+    list: bool,
+    /// Show timestamp
+    #[arg(short, long, default_value_t = false)]
+    time: bool,
 }
 
 fn list_devices() {
@@ -21,13 +30,13 @@ fn list_devices() {
         i += 1;
         match dev.port_type {
             SerialPortType::UsbPort(info) => {
-                print!("USB {:04X}:{:04X}", info.vid, info.pid); 
+                print!("USB {:04X}:{:04X}", info.vid, info.pid);
                 print!(" {}", info.product.unwrap_or("".to_string()));
                 print!(" {}", info.manufacturer.unwrap_or("".to_string()));
             },
             SerialPortType::PciPort => {
                 print!("PCI");
-            }, 
+            },
             SerialPortType::BluetoothPort=>{
                 print!("Bluetooth");
             },
@@ -46,14 +55,21 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
-    let mut seril_port = serialport::new("COM20", 115200).open().expect("failed to open the port");
+    let port = args.port.expect("Serial port is not specified!");
+    let mut seril_port = serialport::new(port.as_str(), args.baud)
+                            .open()
+                            .expect(
+                                format!("Failed to open the serial port: {}\n",
+                                     port.as_str()).as_str()) ;
+
+    println!("Opened serial port: {} baudrate: {}", port.as_str(), args.baud);
     let mut buf = [0;1];
     let mut stdout = std::io::stdout().lock();
     loop {
         match seril_port.read(&mut buf) {
             Ok(_) => {
                 if buf[0] == b'\n' {
-                    println!("##### new line detected");
+                    // println!("##### new line detected");
                 }
                 stdout.write_all(&mut buf)?;
             },
