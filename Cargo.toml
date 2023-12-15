@@ -1,0 +1,10 @@
+[package]
+name = "sm"
+version = "0.1.0"
+edition = "2021"
+authors = ["YuanSuyi@hzudusn.com"]
+description = "Serial monitor used on console(command line/shell), mainly for receive debug message from SoC devices via UART." 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serialport = "4.3.0"
