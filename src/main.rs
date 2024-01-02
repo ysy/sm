@@ -80,7 +80,7 @@ fn main() -> io::Result<()> {
                 } else if new_line_detected {
                     if args.time {
                         let tm = get_timestamp();
-                        stdout.write_all(tm.as_bytes())?;
+                        stdout.write_all(tm.as_bytes()).unwrap_or(());
                     }
                     new_line_detected = false;
                 }
