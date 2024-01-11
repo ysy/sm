@@ -1,5 +1,6 @@
 #![warn(rust_2018_idioms)]
 use std::io::{self, Write, Read};
+use std::str;
 use serialport::{self, SerialPortType};
 use clap::Parser;
 use chrono::prelude::*;
@@ -84,7 +85,22 @@ fn main() -> io::Result<()> {
                     }
                     new_line_detected = false;
                 }
-                stdout.write_all(&mut buf)?;
+                // stdout.write_all(&mut buf).unwrap_or(());
+                match str::from_utf8(&buf){
+                    Ok(_) => {},
+                    Err(_) => {
+                        // println!("#ERR: {}", err);
+                        print!("*");
+                        continue;
+                    }
+                } 
+
+                match stdout.write_all(&mut buf) {
+                    Ok(_) => {},
+                    Err(err) => {
+                        println!("#ERR: {}", err);
+                    }
+                }
             },
 
             Err(err) => {

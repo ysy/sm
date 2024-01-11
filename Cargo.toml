@@ -1,6 +1,6 @@
 [package]
 name = "sm"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["YuanSuyi@hzudusn.com"]
 description = "Serial monitor used on console(command line/shell), mainly for receive debug message from SoC devices via UART." 
