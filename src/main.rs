@@ -21,6 +21,9 @@ struct Args {
     /// Show timestamp
     #[arg(short, long, default_value_t = false)]
     time: bool,
+    /// write log file
+    #[arg(short, long, default_value_t = false)]
+    write_log_file: bool,
 }
 
 fn list_devices() {
@@ -55,6 +58,11 @@ fn get_timestamp() ->String {
     format!("{}", local.format("%m-%d %H:%M:%S%.3f "))
 }
 
+fn get_log_file_name() -> String {
+    let local: DateTime<Local> = Local::now();
+    format!("{}", local.format("Serial_Log_%Y-%m-%d_%H_%M_%S.log"))
+}
+
 fn main() -> io::Result<()> {
     let args =  Args::parse();
 
@@ -73,6 +81,12 @@ fn main() -> io::Result<()> {
     let mut buf = [0;1];
     let mut stdout = std::io::stdout().lock();
     let mut new_line_detected = true;
+
+    let mut log_file = None;
+    if args.write_log_file {
+        log_file = std::fs::File::create(get_log_file_name()).ok();
+    }
+
     loop {
         match seril_port.read(&mut buf) {
             Ok(_) => {
@@ -82,10 +96,18 @@ fn main() -> io::Result<()> {
                     if args.time {
                         let tm = get_timestamp();
                         stdout.write_all(tm.as_bytes()).unwrap_or(());
+
+                        if args.write_log_file {
+                            log_file.as_mut().unwrap().write_all(tm.as_bytes()).unwrap_or(());
+                        }
                     }
                     new_line_detected = false;
                 }
                 // stdout.write_all(&mut buf).unwrap_or(());
+                if args.write_log_file {
+                    log_file.as_mut().unwrap().write_all(&mut buf).unwrap_or(());
+                }
+
                 match str::from_utf8(&buf){
                     Ok(_) => {},
                     Err(_) => {
@@ -93,7 +115,7 @@ fn main() -> io::Result<()> {
                         print!("*");
                         continue;
                     }
-                } 
+                }
 
                 match stdout.write_all(&mut buf) {
                     Ok(_) => {},
