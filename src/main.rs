@@ -25,6 +25,19 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     write_log_file: bool,
 }
+#[cfg(target_os = "windows")]
+fn add_com_prefix(path: &str) -> String {
+    if !path.to_lowercase().starts_with("com") {
+        format!("COM{}", path)
+    } else {
+        path.to_string()
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn add_com_prefix(path: &str) -> String {
+    path.to_string()
+}
 
 fn list_devices() {
     let dev_list = serialport::available_ports().unwrap();
@@ -72,6 +85,7 @@ fn main() -> io::Result<()> {
     }
 
     let port = args.port.expect("Serial port is not specified!");
+    let port = add_com_prefix(&port);
     let mut seril_port = serialport::new(port.as_str(), args.baud)
                             .open()
                             .expect(
