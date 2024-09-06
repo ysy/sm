@@ -13,8 +13,8 @@ struct Args {
     #[arg(short, long)]
     port: Option<String>,
     /// Baudrate
-    #[arg(short, long, default_value_t=115200)]
-    baud: u32,
+    #[arg(short, long, default_value_t=String::from("115200"))]
+    baud: String,
     /// List serial port devices
     #[arg(short, long, default_value_t = false)]
     list: bool,
@@ -37,6 +37,23 @@ fn add_com_prefix(path: &str) -> String {
 #[cfg(not(target_os = "windows"))]
 fn add_com_prefix(path: &str) -> String {
     path.to_string()
+}
+
+fn parse_baud_rate(baud_rate: &str) -> Result<u32, String> {
+    let trimmed = baud_rate.trim().to_lowercase();
+
+    if trimmed.ends_with('m') {
+        let value = trimmed.trim_end_matches('m');
+        match value.parse::<f64>() {
+            Ok(num) => Ok((num * 1_000_000.0) as u32),
+            Err(_) => Err(format!("Invalid baud rate format: {}", baud_rate))
+        }
+    } else {
+        match trimmed.parse::<u32>() {
+            Ok(num) => Ok(num),
+            Err(_) => Err(format!("Invalid baud rate format: {}", baud_rate))
+        }
+    }
 }
 
 fn list_devices() {
@@ -84,13 +101,18 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
+
     let port = args.port.expect("Serial port is not specified!");
     let port = add_com_prefix(&port);
-    let mut seril_port = serialport::new(port.as_str(), args.baud)
+
+
+    let baud = parse_baud_rate(&args.baud).expect("Invalid baud rate!");
+    let mut seril_port = serialport::new(port.as_str(), baud)
                             .open()
                             .expect(
                                 format!("Failed to open the serial port: {}\n",
                                      port.as_str()).as_str());
+
     println!("Opened serial port: {} baudrate: {}", port.as_str(), args.baud);
     let mut buf = [0;1];
     let mut stdout = std::io::stdout().lock();
